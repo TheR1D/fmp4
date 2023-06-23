@@ -24,6 +24,8 @@ func totalSizeOfAtoms(atoms [segmentsLength]*atoms.AtomWithSeek) uint64 {
 
 func main() {
 	// Expecting fragmented mp4 file FullHD 60fps, 6 seconds per manifest fragment.
+	// TODO: Define manifest bandwidth, framerate, resolution based on mp4 metadata.
+	// TODO: Add support for multiple video/audio/subtitle tracks.
 	fileName := "main.mp4"
 	file, err := os.Open("static/" + fileName)
 	if err != nil {
@@ -50,8 +52,8 @@ func main() {
 			counter++
 			if counter == segmentsLength {
 				fmt.Println(segmentAtoms)
-				totalSize := totalSizeOfAtoms(segmentAtoms)
 				segmentStart := segmentAtoms[0].Seek - int64(segmentAtoms[0].Atom.Size)
+				totalSize := totalSizeOfAtoms(segmentAtoms)
 				segmentBr := utils.ByteRange{Start: uint64(segmentStart), Length: totalSize}
 				manifest.AppendSegment(segmentLength, segmentBr, manifestVidPath)
 				counter = 0
