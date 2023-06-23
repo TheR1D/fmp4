@@ -39,6 +39,9 @@ else
     exit 1
 fi
 
+echo "Installing Python dependencies"
+pip install "fastapi[all]"
+
 echo "Starting Python HTTP server and VLC player"
 open -a VLC http://localhost:8000/static/manifest_main.m3u8
 
