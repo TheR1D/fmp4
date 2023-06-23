@@ -26,17 +26,14 @@ async def read_file(request: Request, file_path: str):
         raise HTTPException(status_code=404, detail="File not found")
 
     range = request.headers.get('range')
-    start, end = 0, None
-    if range is not None:
-        start_end = range.split("=")[1].split("-")
-        start = int(start_end[0])
-        end = int(start_end[1]) if start_end[1] else None
+    start, end = range.split("=")[1].split("-")
+    start, end = int(start), int(end)
 
     print(f"Client requests byte range: {start}-{end}")
     data = None
     with open(file_location, "rb") as f:
         f.seek(start)
-        data = f.read((end + 1) - start if end is not None else None)
+        data = f.read((end + 1) - start)
 
     if data is None:
         raise HTTPException(status_code=416, detail="Range not satisfiable")
