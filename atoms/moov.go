@@ -1,27 +1,49 @@
 package atoms
 
 import (
+	"encoding/binary"
 	"fmt"
 	"os"
 )
 
 type Moov struct {
-	*Atom
+	BaseAtom
+	Mvhd *Mvhd
+	Trak *Trak
 }
 
-func NewMoov(atom *Atom, file *os.File) *Moov {
-	movie := Moov{Atom: atom}
-	// Since moov atom contains nested atoms, we need to seek back for future parses.
-	//_, err := file.Seek(-int64(atom.Size-8), io.SeekCurrent)
-	//if err != nil {
-	//	panic(err)
-	//}
-	return &movie
+func NewMoov(file *os.File) *Moov {
+	moov := &Moov{}
+	if err := moov.Parse(file); err != nil {
+		panic(err)
+	}
+	return moov
 }
 
-func (a Moov) String() string {
+func (a *Moov) Parse(file *os.File) error {
+	if err := binary.Read(file, binary.BigEndian, &a.Size); err != nil {
+		return err
+	}
+	if err := binary.Read(file, binary.BigEndian, &a.Type); err != nil {
+		return err
+	}
+	a.Mvhd = &Mvhd{}
+	if err := a.Mvhd.Parse(file); err != nil {
+		return err
+	}
+	if err := SkipUntil("trak", file); err != nil {
+		return err
+	}
+	a.Trak = &Trak{}
+	if err := a.Trak.Parse(file); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (a *Moov) String() string {
 	return fmt.Sprintf(
-		"MovieAtom { Type: %s, Size: %d}",
-		a.Type, a.Size,
+		"moov: {Type: %s, Size: %d, Mvhd: {%s}, Trak: {%s}}",
+		a.Type, a.Size, a.Mvhd, a.Trak,
 	)
 }

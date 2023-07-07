@@ -7,40 +7,44 @@ import (
 )
 
 type Ftyp struct {
-	// File type atom (aka ftyp) are always first in the file.
+	BaseAtom
 	MajorBrand       [4]byte
 	MinorVersion     uint32
 	CompatibleBrands []byte
-	*Atom
 }
 
-func NewFtyp(atom *Atom, file *os.File) *Ftyp {
-	fileType := Ftyp{Atom: atom}
-	err := binary.Read(file, binary.BigEndian, &fileType.MajorBrand)
-	if err != nil {
+func NewFtyp(file *os.File) *Ftyp {
+	ftypAtom := &Ftyp{}
+	if err := ftypAtom.Parse(file); err != nil {
 		panic(err)
 	}
-	err = binary.Read(file, binary.BigEndian, &fileType.MinorVersion)
-	if err != nil {
-		panic(err)
-	}
-	fileType.CompatibleBrands = make([]byte, atom.Size-16)
-	_, err = file.Read(fileType.CompatibleBrands)
-	if err != nil {
-		panic(err)
-	}
-	return &fileType
+	return ftypAtom
 }
 
-func (a Ftyp) String() string {
+func (a *Ftyp) Parse(file *os.File) error {
+	if err := binary.Read(file, binary.BigEndian, &a.Size); err != nil {
+		return err
+	}
+	if err := binary.Read(file, binary.BigEndian, &a.Type); err != nil {
+		return err
+	}
+	if err := binary.Read(file, binary.BigEndian, &a.MajorBrand); err != nil {
+		return err
+	}
+	if err := binary.Read(file, binary.BigEndian, &a.MinorVersion); err != nil {
+		return err
+	}
+
+	a.CompatibleBrands = make([]byte, a.Size-16)
+	if _, err := file.Read(a.CompatibleBrands); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (a *Ftyp) String() string {
 	return fmt.Sprintf(
-		"FileTypeAtom {"+
-			"Type: %s, "+
-			"Size: %d, "+
-			"MajorBrand: %s, "+
-			"MinorVersion: %d, "+
-			"CompatibleBrands: %s"+
-			"}",
-		a.Type, a.Size, a.MajorBrand, a.MinorVersion, a.CompatibleBrands,
+		"ftyp: {Type: %s, Size: %d, MajorBrand: %s, MinorVersion: %d, CompatibleBrands: %s}",
+		a.GetType(), a.GetSize(), a.MajorBrand, a.MinorVersion, a.CompatibleBrands,
 	)
 }

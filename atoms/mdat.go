@@ -8,12 +8,12 @@ import (
 
 type Mdat struct {
 	RawData []byte
-	*Atom
+	*BaseAtom
 }
 
-func NewMdat(atom *Atom, file *os.File) *Mdat {
+func NewMdat(atom *BaseAtom, file *os.File) *Mdat {
 	data := make([]byte, atom.Size-8)
-	mdat := Mdat{Atom: atom, RawData: data}
+	mdat := Mdat{BaseAtom: atom, RawData: data}
 	err := binary.Read(file, binary.BigEndian, &mdat.RawData)
 	if err != nil {
 		panic(err)
