@@ -63,3 +63,9 @@ func SkipUntil(atomType string, file *os.File) error {
 	_, _ = file.Seek(-8, io.SeekCurrent)
 	return nil
 }
+
+func MustSkipUntil(atomType string, file *os.File) {
+	if err := SkipUntil(atomType, file); err != nil {
+		panic(err)
+	}
+}

@@ -27,11 +27,17 @@ const (
 //	moof := atoms.NewMoof(file)
 //}
 
+func getFramerate(timescale uint32, duration uint32) uint32 {
+	secondsPerFrame := float32(duration) / float32(timescale)
+	frameRate := 1 / secondsPerFrame
+	return uint32(frameRate)
+}
+
 func main() {
 	// Expecting fragmented mp4 file FullHD 60fps, 6 seconds per manifest fragment.
 	// TODO: Define manifest bandwidth, framerate, resolution based on mp4 metadata.
 	// TODO: Add support for multiple video/audio/subtitle tracks.
-	fileName := "audio_a1.mp4"
+	fileName := "main.mp4"
 	file, err := os.Open("static/" + fileName)
 	if err != nil {
 		panic(err)
@@ -39,7 +45,10 @@ func main() {
 	defer file.Close()
 
 	for iter := atoms.NewAtomIterator(file, true); iter.Next(); {
-		atom := iter.Value()
-		fmt.Println(atom)
+		satom := iter.Value()
+		if moov, ok := satom.Atom.(*atoms.Moov); ok {
+			fmt.Println("moov found", moov)
+		}
+		fmt.Println(satom)
 	}
 }

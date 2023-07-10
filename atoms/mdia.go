@@ -9,6 +9,7 @@ import (
 type Mdia struct {
 	BaseAtom
 	Hdlr *Hdlr
+	Mdhd *Mdhd
 }
 
 func NewMdia(file *os.File) *Mdia {
@@ -26,16 +27,24 @@ func (a *Mdia) Parse(file *os.File) error {
 	if err := binary.Read(file, binary.BigEndian, &a.Type); err != nil {
 		return err
 	}
-	if err := SkipUntil("hdlr", file); err != nil {
+	if err := SkipUntil("mdhd", file); err != nil {
 		return err
 	}
-	a.Hdlr = NewHdlr(file)
+	a.Mdhd = &Mdhd{}
+	if err := a.Mdhd.Parse(file); err != nil {
+		return err
+	}
+	_ = SkipUntil("hdlr", file)
+	a.Hdlr = &Hdlr{}
+	if err := a.Hdlr.Parse(file); err != nil {
+		return err
+	}
 	return nil
 }
 
 func (a *Mdia) String() string {
 	return fmt.Sprintf(
-		"mdia: {Type: %s, Size: %d, Hdlr: {%s}}",
-		a.Type, a.Size, a.Hdlr,
+		"mdia: {Type: %s, Size: %d, Hdlr: {%s}, Mdhd: {%s}}",
+		a.Type, a.Size, a.Hdlr, a.Mdhd,
 	)
 }
