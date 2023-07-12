@@ -14,10 +14,17 @@ const (
 	segmentsLength = (segmentLength / mdatLength) * 2
 )
 
-func totalSizeOfAtoms(atoms [segmentsLength]*atoms.AtomWithSeek) uint64 {
+// TODO: Move helper function into utils package.
+func getFramerate(timescale uint32, duration uint32) uint32 {
+	secondsPerFrame := float32(duration) / float32(timescale)
+	frameRate := 1 / secondsPerFrame
+	return uint32(frameRate)
+}
+
+func totalSizeOfAtoms(atoms [segmentsLength]*atoms.SAtom) uint64 {
 	var totalSize uint64
 	for _, atom := range atoms {
-		totalSize += uint64(atom.Atom.Size)
+		totalSize += uint64(atom.Atom.GetSize())
 	}
 	return totalSize
 }
@@ -29,30 +36,31 @@ func main() {
 	fileName := "main.mp4"
 	file, err := os.Open("static/" + fileName)
 	if err != nil {
-		fmt.Println("Error opening file:", err)
-		return
+		panic(err)
 	}
 	defer file.Close()
 
 	mainBr := utils.ByteRange{}
 	var manifest *manifests.Hls
-	var segmentAtoms [segmentsLength]*atoms.AtomWithSeek
+	var segmentAtoms [segmentsLength]*atoms.SAtom
 	counter := 0
 	manifestVidPath := "/files/" + fileName
-	for atomWithSeek := range atoms.Generator(file) {
-		atom := atomWithSeek.Atom
+	for iter := atoms.NewAtomIterator(file, true); iter.Next(); {
+		satom := iter.Value()
+		fmt.Println(satom)
+		atom := satom.Atom
 		// TODO: Could be optimized.
-		if atom.TypeStr() == "moov" {
+		if atom.GetType() == "moov" {
 			// If we found first moov atom, the previous bytes are
 			// main byte range which include ftype, moov atoms.
-			mainBr.Length = uint64(atomWithSeek.Seek)
+			mainBr.Length = uint64(satom.EndsAt())
 			manifest = manifests.NewHls(segmentLength, manifestVidPath, mainBr)
-		} else if atom.TypeStr() == "moof" || atom.TypeStr() == "mdat" {
-			segmentAtoms[counter] = atomWithSeek
+		} else if atom.GetType() == "moof" || atom.GetType() == "mdat" {
+			segmentAtoms[counter] = satom
 			counter++
 			if counter == segmentsLength {
 				fmt.Println(segmentAtoms)
-				segmentStart := segmentAtoms[0].Seek - int64(segmentAtoms[0].Atom.Size)
+				segmentStart := segmentAtoms[0].StartsAt()
 				totalSize := totalSizeOfAtoms(segmentAtoms)
 				segmentBr := utils.ByteRange{Start: uint64(segmentStart), Length: totalSize}
 				manifest.AppendSegment(segmentLength, segmentBr, manifestVidPath)
