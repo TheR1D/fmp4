@@ -17,33 +17,15 @@ else
     fi
 fi
 
-# Compile the Go file
-echo "Compiling main.go"
-go build main.go
-
-if [ $? -eq 0 ]; then
-    echo "Compilation successful"
-else
-    echo "Compilation failed"
-    exit 1
-fi
+echo "Installing server dependencies"
+go get github.com/gin-gonic/gin
 
 # Run the Go file
 echo "Running main.go"
-./main
+go run main.go
 
-if [ $? -eq 0 ]; then
-    echo "Running of main.go was successful"
-else
-    echo "Running of main.go failed"
-    exit 1
-fi
+echo "Starting HTTP server and VLC player"
+open -a VLC http://localhost:8080/static/manifest_main.m3u8
 
-echo "Installing Python dependencies"
-pip install "fastapi[all]"
-
-echo "Starting Python HTTP server and VLC player"
-open -a VLC http://localhost:8000/static/manifest_main.m3u8
-
-# Start Python HTTP Server
-uvicorn server:app --reload
+# Start HTTP Server
+go run server.go
