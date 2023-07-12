@@ -54,6 +54,7 @@ func (a *BaseAtom) String() string {
 func SkipUntil(atomType string, file *os.File) error {
 	// Expecting file seek pointer to be on the beginning of the atom.
 	for a := NewBaseAtom(file); a.GetType() != atomType; a = NewBaseAtom(file) {
+		fmt.Println("Type:", a.GetType())
 		s := int64(a.GetSize() - 8)
 		if _, err := file.Seek(s, io.SeekCurrent); err != nil {
 			return err

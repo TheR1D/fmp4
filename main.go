@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmp4/atoms"
+	"fmp4/manifests"
+	"fmp4/utils"
 	"fmt"
 	"os"
 )
@@ -12,25 +14,19 @@ const (
 	segmentsLength = (segmentLength / mdatLength) * 2
 )
 
-//func getFrameRate(timescale uint32, fragmentDuration uint32) float32 {
-//	return float32(timescale) / float32(fragmentDuration)
-//}
-//
-//func DetectFrameRate(file *os.File) float32 {
-//	if err := atoms.SkipUntil("mvhd", file); err != nil {
-//		panic(err)
-//	}
-//	mvhd := atoms.NewMvhd(file)
-//	if err := atoms.SkipUntil("moof", file); err != nil {
-//		panic(err)
-//	}
-//	moof := atoms.NewMoof(file)
-//}
-
+// TODO: Move helper function into utils package.
 func getFramerate(timescale uint32, duration uint32) uint32 {
 	secondsPerFrame := float32(duration) / float32(timescale)
 	frameRate := 1 / secondsPerFrame
 	return uint32(frameRate)
+}
+
+func totalSizeOfAtoms(atoms [segmentsLength]*atoms.SAtom) uint64 {
+	var totalSize uint64
+	for _, atom := range atoms {
+		totalSize += uint64(atom.Atom.GetSize())
+	}
+	return totalSize
 }
 
 func main() {
@@ -44,11 +40,37 @@ func main() {
 	}
 	defer file.Close()
 
+	mainBr := utils.ByteRange{}
+	var manifest *manifests.Hls
+	var segmentAtoms [segmentsLength]*atoms.SAtom
+	counter := 0
+	manifestVidPath := "/files/" + fileName
 	for iter := atoms.NewAtomIterator(file, true); iter.Next(); {
 		satom := iter.Value()
-		if moov, ok := satom.Atom.(*atoms.Moov); ok {
-			fmt.Println("moov found", moov)
-		}
 		fmt.Println(satom)
+		atom := satom.Atom
+		// TODO: Could be optimized.
+		if atom.GetType() == "moov" {
+			// If we found first moov atom, the previous bytes are
+			// main byte range which include ftype, moov atoms.
+			mainBr.Length = uint64(satom.EndsAt())
+			manifest = manifests.NewHls(segmentLength, manifestVidPath, mainBr)
+		} else if atom.GetType() == "moof" || atom.GetType() == "mdat" {
+			segmentAtoms[counter] = satom
+			counter++
+			if counter == segmentsLength {
+				fmt.Println(segmentAtoms)
+				segmentStart := segmentAtoms[0].StartsAt()
+				totalSize := totalSizeOfAtoms(segmentAtoms)
+				segmentBr := utils.ByteRange{Start: uint64(segmentStart), Length: totalSize}
+				manifest.AppendSegment(segmentLength, segmentBr, manifestVidPath)
+				counter = 0
+			}
+		}
+	}
+	manifest.Finalize()
+	err = manifest.WriteToFile("static/manifest_fhd.m3u8")
+	if err != nil {
+		fmt.Println("Couldn't write to file:", err)
 	}
 }

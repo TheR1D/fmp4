@@ -47,6 +47,12 @@ func (it *AtomIterator) Value() *SAtom {
 				panic(err)
 			}
 			return satom
+		case "moof":
+			satom.Atom = NewMoof(it.file)
+			if _, err := it.file.Seek(satom.EndsAt(), io.SeekStart); err != nil {
+				panic(err)
+			}
+			return satom
 		}
 	}
 	size := int64(satom.Atom.GetSize())

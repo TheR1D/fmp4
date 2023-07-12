@@ -25,10 +25,7 @@ func NewHdlr(file *os.File) *Hdlr {
 }
 
 func (a *Hdlr) Parse(file *os.File) error {
-	if err := binary.Read(file, binary.BigEndian, &a.Size); err != nil {
-		return err
-	}
-	if err := binary.Read(file, binary.BigEndian, &a.Type); err != nil {
+	if err := a.BaseAtom.Parse(file); err != nil {
 		return err
 	}
 	if err := binary.Read(file, binary.BigEndian, &a.Version); err != nil {
@@ -46,6 +43,7 @@ func (a *Hdlr) Parse(file *os.File) error {
 	if err := binary.Read(file, binary.BigEndian, &a.Reserved2); err != nil {
 		return err
 	}
+	// Subtract 32 bytes, since at this point we read 32 bytes for fields above.
 	a.HandlerName = make([]byte, a.Size-32)
 	if err := binary.Read(file, binary.BigEndian, &a.HandlerName); err != nil {
 		return err

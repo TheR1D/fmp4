@@ -48,6 +48,10 @@ func (a *Tkhd) GetHeight() uint32 {
 	return a.Height / (1 << 16)
 }
 
+func (a *Tkhd) GetResolution() (uint32, uint32) {
+	return a.GetWidth(), a.GetHeight()
+}
+
 func (a *Tkhd) String() string {
 	return fmt.Sprintf(
 		"tkhd: {Type: %s, Size: %d, Version: %d, Flags: %b, CreationTime: %d, ModificationTime: %d, TrackID: %d, Duration: %d, Layer: %d, AlternateGroup: %d, Volume: %d, Matrix: %b, Width: %d, Height: %d}",

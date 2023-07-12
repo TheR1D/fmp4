@@ -22,10 +22,7 @@ func NewFtyp(file *os.File) *Ftyp {
 }
 
 func (a *Ftyp) Parse(file *os.File) error {
-	if err := binary.Read(file, binary.BigEndian, &a.Size); err != nil {
-		return err
-	}
-	if err := binary.Read(file, binary.BigEndian, &a.Type); err != nil {
+	if err := a.BaseAtom.Parse(file); err != nil {
 		return err
 	}
 	if err := binary.Read(file, binary.BigEndian, &a.MajorBrand); err != nil {
@@ -34,7 +31,6 @@ func (a *Ftyp) Parse(file *os.File) error {
 	if err := binary.Read(file, binary.BigEndian, &a.MinorVersion); err != nil {
 		return err
 	}
-
 	a.CompatibleBrands = make([]byte, a.Size-16)
 	if _, err := file.Read(a.CompatibleBrands); err != nil {
 		return err

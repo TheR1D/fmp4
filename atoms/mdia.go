@@ -1,7 +1,6 @@
 package atoms
 
 import (
-	"encoding/binary"
 	"fmt"
 	"os"
 )
@@ -21,10 +20,7 @@ func NewMdia(file *os.File) *Mdia {
 }
 
 func (a *Mdia) Parse(file *os.File) error {
-	if err := binary.Read(file, binary.BigEndian, &a.Size); err != nil {
-		return err
-	}
-	if err := binary.Read(file, binary.BigEndian, &a.Type); err != nil {
+	if err := a.BaseAtom.Parse(file); err != nil {
 		return err
 	}
 	if err := SkipUntil("mdhd", file); err != nil {
