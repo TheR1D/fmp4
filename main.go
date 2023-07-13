@@ -5,29 +5,9 @@ import (
 	"fmp4/manifests"
 	"fmp4/utils"
 	"fmt"
+	"io"
 	"os"
 )
-
-const (
-	segmentLength  = 6 // Segment length in seconds for manifest.
-	mdatLength     = 2 // Single mdat length in seconds.
-	segmentsLength = (segmentLength / mdatLength) * 2
-)
-
-// TODO: Move helper function into utils package.
-func getFramerate(timescale uint32, duration uint32) uint32 {
-	secondsPerFrame := float32(duration) / float32(timescale)
-	frameRate := 1 / secondsPerFrame
-	return uint32(frameRate)
-}
-
-func totalSizeOfAtoms(atoms [segmentsLength]*atoms.SAtom) uint64 {
-	var totalSize uint64
-	for _, atom := range atoms {
-		totalSize += uint64(atom.Atom.GetSize())
-	}
-	return totalSize
-}
 
 func main() {
 	// Expecting fragmented mp4 file FullHD 60fps, 6 seconds per manifest fragment.
@@ -40,11 +20,18 @@ func main() {
 	}
 	defer file.Close()
 
-	mainBr := utils.ByteRange{}
+	segmentLength := 6 // Segment length in seconds for manifest.
+	mdatLength := 2    // Single mdat length in seconds.
+	segmentsLength := (segmentLength / mdatLength) * 2
+
+	file.Seek(0, io.SeekStart)
 	var manifest *manifests.Hls
-	var segmentAtoms [segmentsLength]*atoms.SAtom
+
+	mainBr := utils.ByteRange{}
+	segmentAtoms := make([]*atoms.SAtom, segmentsLength)
 	counter := 0
 	manifestVidPath := "/files/" + fileName
+
 	for iter := atoms.NewAtomIterator(file, true); iter.Next(); {
 		satom := iter.Value()
 		fmt.Println(satom)
@@ -59,11 +46,10 @@ func main() {
 			segmentAtoms[counter] = satom
 			counter++
 			if counter == segmentsLength {
-				fmt.Println(segmentAtoms)
 				segmentStart := segmentAtoms[0].StartsAt()
-				totalSize := totalSizeOfAtoms(segmentAtoms)
+				totalSize := utils.TotalSizeOfAtoms(segmentAtoms)
 				segmentBr := utils.ByteRange{Start: uint64(segmentStart), Length: totalSize}
-				manifest.AppendSegment(segmentLength, segmentBr, manifestVidPath)
+				manifest.AppendSegment(float64(segmentLength), segmentBr, manifestVidPath)
 				counter = 0
 			}
 		}
