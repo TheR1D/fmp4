@@ -7,9 +7,7 @@ import (
 )
 
 type Mdhd struct {
-	BaseAtom
-	Version          uint8
-	Flags            [3]byte
+	FullAtom
 	CreationTime     uint32
 	ModificationTime uint32
 	Timescale        uint32

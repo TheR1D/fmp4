@@ -7,9 +7,7 @@ import (
 )
 
 type Tfhd struct {
-	BaseAtom
-	Version uint8
-	Flags   [3]byte
+	FullAtom
 	TrackId uint32
 	// Optional fields
 	//BaseDataOffset         uint64

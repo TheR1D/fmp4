@@ -7,13 +7,11 @@ import (
 )
 
 type Hdlr struct {
-	BaseAtom
-	Version     uint8
-	Flags       [3]byte
+	FullAtom
 	Reserved1   [4]byte
-	HandlerType [4]byte // Should be casted to string.
+	HandlerType [4]byte // Should be cast to string.
 	Reserved2   [12]byte
-	HandlerName []byte // Should be casted to string.
+	HandlerName []byte // Should be cast to string.
 }
 
 func NewHdlr(file *os.File) *Hdlr {
@@ -25,13 +23,7 @@ func NewHdlr(file *os.File) *Hdlr {
 }
 
 func (a *Hdlr) Parse(file *os.File) error {
-	if err := a.BaseAtom.Parse(file); err != nil {
-		return err
-	}
-	if err := binary.Read(file, binary.BigEndian, &a.Version); err != nil {
-		return err
-	}
-	if err := binary.Read(file, binary.BigEndian, &a.Flags); err != nil {
+	if err := a.FullAtom.Parse(file); err != nil {
 		return err
 	}
 	if err := binary.Read(file, binary.BigEndian, &a.Reserved1); err != nil {
